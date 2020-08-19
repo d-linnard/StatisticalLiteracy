@@ -1,13 +1,26 @@
 ---
-title: "Lessons from the Space Shuttle Challenger Disaster"
+title: "Lessons from the space shuttle *Challenger* disaster"
 author: "David Linnard Wheeler"
-date: "8/17/2020"
+date: "8/28/2020"
 output: html_document
 ---
+# What happened
 
-# The space shuttle Challenger was...
+## The space shuttle *Challenger* was ready to launch on the morning  of Tuesday, January 28, 1986.
+![Prepared to launch](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Launch.png)
+
+## This was a non-trivial flight. 
+
+![The crew](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/crew.png)
 
 
+
+## The night before the launch there was a 3 hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the call was the $31^\circ$F forecast for the next morning.
+
+
+
+![The O-rings failed](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/MM.png)
+# What *should* have happened
 ```{r warning=FALSE, message=FALSE, echo=F}
 library(ggplot2) # for plotting
 library(plotly)
@@ -17,7 +30,6 @@ library(car) # For Likelihood Ratio Tests on the fly
 library(data.table) # to enable creation and coercion of data tables
 library(stargazer) # to tabulate regression tables
 library(skimr) # for basic EDA
-library(mcprofile) # for profile likelihoods
 library(dplyr) # for coercing dataframes and summary statistic
 ```
 
