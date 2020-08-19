@@ -1,26 +1,24 @@
 ---
-title: "Lessons from the space shuttle *Challenger* disaster"
+title: "Lessons from the space shuttle Challenger disaster"
 author: "David Linnard Wheeler"
 date: "8/28/2020"
 output: html_document
 ---
-# What happened
+# What happened?
 
-## The space shuttle *Challenger* was ready to launch on the morning  of Tuesday, January 28, 1986.
-![Prepared to launch](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Launch.png)
+### The space shuttle Challenger was ready to launch on the morning of Tuesday, January 28, 1986.
 
-## This was a non-trivial flight. 
+![Figure 1. Prepared to launch](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Launch.png)
 
-![The crew](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/crew.png)
+### This was a symbiolic flight. 
 
+![Figure 2. The crew](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/crew.png)
 
+### The night before the launch there was a 3 hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the discussion was the sensitivity of O-rings, which seal the joints in booster rockets, to low temperatures. 
 
-## The night before the launch there was a 3 hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the call was the $31^\circ$F forecast for the next morning.
+![Figure 3. O-rings seal joints on booster rockets](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Oring.png)
 
-
-
-![The O-rings failed](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/MM.png)
-# What *should* have happened
+### The discussion considered the data below. 
 ```{r warning=FALSE, message=FALSE, echo=F}
 library(ggplot2) # for plotting
 library(plotly)
@@ -30,11 +28,107 @@ library(car) # For Likelihood Ratio Tests on the fly
 library(data.table) # to enable creation and coercion of data tables
 library(stargazer) # to tabulate regression tables
 library(skimr) # for basic EDA
+library(knitr)
 library(dplyr) # for coercing dataframes and summary statistic
 ```
 
-
 ```{r echo=F}
+# Import data
 df = read.table("challenger.csv", header=T, sep=",")
+# Present data
+# kable(df)
 ```
 
+
+### Upon inspection of *this* plot, most of the participants concluded that, since the plot is "U"  shaped, there was **no** evidence that temperature affected O-ring failure.
+```{r, echo=F, fig.cap="O-ring failure as a function of temperature"}
+# O-ring vs Temperature
+ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
+  geom_jitter(size = 1, alpha = 0.75, stroke=3, height=.05, width=.3) +
+  scale_x_continuous(name = "Temperature (°F)")+
+  scale_y_discrete(name = "Number of\nO-ring failures") +
+  theme_classic() +
+  theme(text = element_text(size = 12)) +
+  theme(legend.position = c(0.5, 1.05), legend.title=element_text(size=9), legend.text=element_text(size=7)) +  
+  theme(plot.title = element_text(hjust=0)) + 
+  theme(
+  axis.title.x = element_text(size = 12),
+  axis.text.x = element_text(size = 12),
+  axis.title.y = element_text(size = 12),
+  axis.text.y = element_text(size = 12),
+  plot.title = element_text(size = 12)) 
+```
+
+### In contrast, at least one participant, Roger Boisjoly, stated that "temperature was indeed a discriminator".
+
+### Regardless, the Challenger was launched the following morning.
+
+![Figure 4. Challenger launch (NASA)](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Takeoff.png)
+
+### 73 seconds into the flight, the shuttle exploded. 
+
+![Figure 5. The O-rings failed](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/MM.png)
+
+### ...
+
+# What *should* have happened?
+
+### Following the accident, President Regan appointed William Rogers to lead a committee to investigate the incident.
+
+### The committee concluded that "A combustion gas leak through the right Solid Rocket Motor aft field joint initiated at or shortly after ignition eventually weakened and/or penetrated the External Tank initiating vehicle structural breakup and loss of the Space Shuttle *Challenger*."
+
+### Further, the committee concluded that "careful analysis of the flight history of the O-ring performance would have revealed the correlation of O-ring damage in low temperature".
+
+### To understand the message from the committee, let's look at the data:
+```{r echo=F}
+# Present data
+kable(df)
+```
+
+#### The number of O-rings that failed during 23 total flights was recorded witht the temperature and pressure of the joints at launch.
+
+### O-ring failure as a function of temperature
+
+```{r, echo=F, fig.cap="O-ring failure as a function of temperature"}
+# O-ring vs Temperature
+ggplot(df, aes(x=Temp, y=as.factor(O.ring), colour=O.ring>0)) +
+  geom_jitter(size = 1, alpha = 0.75, stroke=3, height=.05, width=.3) +
+  scale_color_manual(labels = c("ommitted","considered"),
+                                values = rev(c("black","grey"))) +
+  scale_x_continuous(name = "Temperature (°F)")+
+  scale_y_discrete(name = "Number of\nO-ring failures") +
+  #geom_rug(alpha=2/4, size=1, position="jitter") +
+  theme_classic() +
+  theme(text = element_text(size = 12)) +
+  labs(title=expression(color="Observations:"))+
+  theme(legend.position = c(0.5, 1.05), legend.title=element_text(size=9), legend.text=element_text(size=7)) +  
+  theme(plot.title = element_text(hjust=0)) + 
+  theme(
+  axis.title.x = element_text(size = 12),
+  axis.text.x = element_text(size = 12),
+  axis.title.y = element_text(size = 12),
+  axis.text.y = element_text(size = 12),
+  plot.title = element_text(size = 12)) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Resources:
+- https://www.jstor.org/stable/2290069?seq=1#metadata_info_tab_contents
