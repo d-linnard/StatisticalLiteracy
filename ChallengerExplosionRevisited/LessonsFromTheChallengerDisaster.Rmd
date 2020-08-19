@@ -1,0 +1,28 @@
+---
+title: "Lessons from the Space Shuttle Challenger Disaster"
+author: "David Linnard Wheeler"
+date: "8/17/2020"
+output: html_document
+---
+
+# The space shuttle Challenger was...
+
+
+```{r warning=FALSE, message=FALSE, echo=F}
+library(ggplot2) # for plotting
+library(plotly)
+library(GGally) # for scatterplot matrices
+library(gridExtra) # for arranging multiple plots together
+library(car) # For Likelihood Ratio Tests on the fly
+library(data.table) # to enable creation and coercion of data tables
+library(stargazer) # to tabulate regression tables
+library(skimr) # for basic EDA
+library(mcprofile) # for profile likelihoods
+library(dplyr) # for coercing dataframes and summary statistic
+```
+
+
+```{r echo=F}
+df = read.table("challenger.csv", header=T, sep=",")
+```
+
