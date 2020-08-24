@@ -10,13 +10,19 @@ output: html_document
 
 ![Figure 1. Prepared to launch](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Launch.png)
 
+---
+
 ### This was a symbiolic flight. 
 
 ![Figure 2. The crew](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/crew.png)
 
+---
+
 ### The night before the launch there was a 3 hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the discussion was the sensitivity of O-rings, which seal the joints in booster rockets, to low temperatures. 
 
 ![Figure 3. O-rings seal joints on booster rockets](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Oring.png)
+
+---
 
 ### The discussion considered the data below. 
 ```{r warning=FALSE, message=FALSE, echo=F}
@@ -32,16 +38,17 @@ library(knitr)
 library(dplyr) # for coercing dataframes and summary statistic
 ```
 
-```{r echo=F}
+```{r echo=F, results="hide"}
 # Import data
 df = read.table("challenger.csv", header=T, sep=",")
 # Present data
 # kable(df)
 ```
 
+```{r, echo=F, fig.cap="Figure 4. O-ring failure as a function of temperature"}  
 
-### Upon inspection of *this* plot, most of the participants concluded that, since the plot is "U"  shaped, there was **no** evidence that temperature affected O-ring failure.
-```{r, echo=F, fig.cap="O-ring failure as a function of temperature"}
+
+
 # O-ring vs Temperature
 ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
   geom_jitter(size = 1, alpha = 0.75, stroke=3, height=.05, width=.3) +
@@ -59,17 +66,25 @@ ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
   plot.title = element_text(size = 12)) 
 ```
 
+- Upon inspection of *this* plot, most of the participants concluded that, since the plot is "U"  shaped, there was **no** evidence that temperature affected O-ring failure.
+
+- **Lesson**: the absence of evidence $\neq$ evidence of absence.
+
 ### In contrast, at least one participant, Roger Boisjoly, stated that "temperature was indeed a discriminator".
+
+---
 
 ### Regardless, the Challenger was launched the following morning.
 
-![Figure 4. Challenger launch (NASA)](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Takeoff.png)
+![Figure 5. Challenger launch (NASA)](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Takeoff.png)
+
+---
 
 ### 73 seconds into the flight, the shuttle exploded. 
 
-![Figure 5. The O-rings failed](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/MM.png)
+![Figure 6. The O-rings failed](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/MM.png)
 
-### ...
+---
 
 # What *should* have happened?
 
@@ -79,17 +94,23 @@ ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
 
 ### Further, the committee concluded that "careful analysis of the flight history of the O-ring performance would have revealed the correlation of O-ring damage in low temperature".
 
+---
+
 ### To understand the message from the committee, let's look at the data:
 ```{r echo=F}
 # Present data
 kable(df)
 ```
 
-#### The number of O-rings that failed during 23 total flights was recorded witht the temperature and pressure of the joints at launch.
+- The number of O-rings that failed during 23 total flights was recorded with the temperature and pressure of the joints at launch.
 
-### O-ring failure as a function of temperature
+---
 
-```{r, echo=F, fig.cap="O-ring failure as a function of temperature"}
+### Notice that some observations, those where 0 O-ring failures occured, were omitted.
+
+```{r, echo=F, fig.cap="Figure 7. O-ring failure as a function of temperature"}  
+
+
 # O-ring vs Temperature
 ggplot(df, aes(x=Temp, y=as.factor(O.ring), colour=O.ring>0)) +
   geom_jitter(size = 1, alpha = 0.75, stroke=3, height=.05, width=.3) +
@@ -111,24 +132,95 @@ ggplot(df, aes(x=Temp, y=as.factor(O.ring), colour=O.ring>0)) +
   plot.title = element_text(size = 12)) 
 ```
 
+- **Lessons**: 
+  - ommission of outliers can be dangerous
+  - outlier detection can be conditional on the inclusion/omission of other observations
+  
+---
+
+### O-ring failure might also be sensitive to pressure.
+
+```{r echo=F,message=F,warning=F, fig.cap="Figure 8. Number of O-ring failures as a function of temperature and pressure"}
+fig <- plot_ly(df, x = ~ Temp, y = ~ Pressure, z = ~ factor(O.ring),
+               color = ~ factor(O.ring),
+               colors = c('olivedrab', 'orange2',"orangered2"))
+fig <- fig %>% add_markers()
+fig <- fig %>% layout(title=" ",
+  scene = list(xaxis = list(title = 'Temperature (°F)'),
+                     yaxis = list(title = 'Pressure'),
+                     zaxis = list(title = 'Number of O-ring failures')))
+fig
+```
+
+- **Lesson**: sometimes its valuable to consider several explanatory variables that may contribute to the response.
+
+---
+
+### With the full dataset, another relationship(s) is apparent. To test the influence of temperature and pressure on O-ring failure, we have a couple options.
+
+- One option is to model the number of O-ring failures as a function of temperature and pressure.
+  - **Are there any problems with this approach**?
+
+- Another option is to model O-ring failure as a binary function of temperature and pressure.
+  - **Are there any problems with this approach**?
+  
+---
+
+```{r,echo=F, warning=F,results='asis'}
+# Create new variable Fail for binary model
+df["Failure"] <- ifelse(df$O.ring>=1, 1, 0)
+
+# Estimate a binomial logistic regression model
+model_binomial <- glm(O.ring/Number ~ Temp + Pressure,
+               family = binomial(link = logit),
+               weights = Number, data = df)
+# Estimate binary logistic regression model
+model_binary <- glm(Failure ~ Temp + Pressure,
+               family = binomial(link = logit),
+               data = df)
+# Summary of coefficients, standard errors and p-values
+stargazer(model_binomial, model_binary, 
+         type = "html",
+         model.numbers = FALSE,
+         dep.var.labels  = c("binomial","binary"),
+         column.labels = c("No.of O-ring failures", "O-ring failure"))
+```
+
+---
+
+Consider the binomial model below:
+
+$$ logit\left(\hat{\pi}\right)= 2.520 - 0.098\text{ temperature} + 0.008\text{ pressure} $$
+- And the inverse odds ratio:
+
+```{r echo=F}
+# Inverse odds ratio for binomial model
+1/exp(summary(model_binomial)$coefficients)
+```
+
+- For the binomial logistic regression model with `temperature` and `pressure` included, we see that a unit decrease in temperature changes the odds of failure by 1.1 times.
+
+---
+
+Now consider the binary model below:
+
+$$ logit\left(\hat{\pi}\right)= 13.292 - 0.229\text{ temperature} + 0.010\text{ pressure} $$
+- And the inverse odds ratio:
+
+```{r}
+# Inverse odds ratio for binary model
+1/exp(summary(model_binary)$coefficients)
+```
+
+- For the binary logistic regression model with `Temperature` and `Pressure` included, we see that a unit decrease in temperature changes the odds of failure by 1.25 times.
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+# What did we miss?
+- Model validation!
 
 # Resources:
 - https://www.jstor.org/stable/2290069?seq=1#metadata_info_tab_contents
