@@ -207,7 +207,7 @@ Now consider the binary model below:
 $$ logit\left(\hat{\pi}\right)= 13.292 - 0.229\text{ temperature} + 0.010\text{ pressure} $$
 - And the inverse odds ratio:
 
-```{r}
+```{r echo=F}
 # Inverse odds ratio for binary model
 1/exp(summary(model_binary)$coefficients)
 ```
