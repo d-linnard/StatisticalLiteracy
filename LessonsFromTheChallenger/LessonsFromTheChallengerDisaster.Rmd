@@ -267,7 +267,7 @@ lines(t, CI_higher_pi, lty = 'dashed')
 
 ---
 
-### How confident are we that O-rings would fail at a cold temperature, say 29°F, and a warm temperature, say 72°F? 
+### How confident are we that O-rings would fail at a cold temperature, say 36°F, and a warm temperature, say 72°F? 
 
 ```{r warning=FALSE, echo=F, results="hide"}  
 
@@ -283,7 +283,7 @@ pi = exp(z)/(1+exp(z))
 df$O.ring.pi <- pi
 
 # Dataframe to populate with results
-results <- data.frame(pred.31 = numeric(), pred.72 = numeric())
+results <- data.frame(pred.36 = numeric(), pred.72 = numeric())
 
 for (s in 1:1000){
   
@@ -302,19 +302,19 @@ for (s in 1:1000){
                family = binomial(link = logit),
                data = d)
   # Estimate confidence interval for temp = 31
-  temp.31.data <- data.frame(Temp=29)
-  temp.31 <- predict(object = mod, newdata = temp.31.data,
+  temp.36.data <- data.frame(Temp=26)
+  temp.36 <- predict(object = mod, newdata = temp.36.data,
                       type = "response")
   # Estimate confidence interval for temp = 72
   temp.72.data <- data.frame(Temp=72)
   temp.72 <- predict(object = mod, newdata = temp.72.data,
                       type = "response")
-  results <- results %>% add_row(pred.31 = temp.31, pred.72 = temp.72)  
+  results <- results %>% add_row(pred.36 = temp.36, pred.72 = temp.72)  
 }
 
-CI.31 <- quantile(results[,1], probs=c(0.05, 0.95))
+CI.36 <- quantile(results[,1], probs=c(0.05, 0.95))
 CI.72 <- quantile(results[,2], probs=c(0.05, 0.95))
-data.frame(temp=c(29,72), lower.CI=c(CI.31[1],CI.72[1]), upper.CI=c(CI.31[2],CI.72[2]))
+data.frame(temp=c(36,72), lower.CI=c(CI.36[1],CI.72[1]), upper.CI=c(CI.36[2],CI.72[2]))
 
 ```
 
@@ -330,7 +330,7 @@ hist(results[,1],
      xlab=expression(pi),
      xlim=c(0,1),
      main=' ')
-mtext('(a) Probability of failure at 29 °F', side = 3, padj = -2.5)
+mtext('(a) Probability of failure at 36 °F', side = 3, padj = -2.5)
 # Histogram for temp = 72
 hist(results[,2],
      breaks=10,
