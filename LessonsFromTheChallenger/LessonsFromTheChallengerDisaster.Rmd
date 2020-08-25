@@ -12,13 +12,13 @@ output: html_document
 
 ---
 
-### This was a symbiolic flight. 
+### This was a symbolic flight. 
 
 ![Figure 2. The crew](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/crew.png)
 
 ---
 
-### The night before the launch there was a 3 hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the discussion was the sensitivity of O-rings, which seal the joints in booster rockets, to low temperatures. 
+### The night before the launch there was a three hour teleconference between Morton Thoikol, Marshall Space Flight Center, and Kennedy Space Center. The subject of the discussion was the sensitivity of O-rings, which seal the joints in booster rockets, to lower temperatures. 
 
 ![Figure 3. O-rings seal joints on booster rockets](/Users/davidwheeler/Desktop/TEACHING/Statistical literacy/StatisticalLiteracyRepo/LessonsFromTheChallenger/Oring.png)
 
@@ -88,11 +88,11 @@ ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
 
 # What *should* have happened?
 
-### Following the accident, President Regan appointed William Rogers to lead a committee to investigate the incident.
+- Following the accident, President Regan appointed William Rogers to lead a committee to investigate the incident.
 
-### The committee concluded that "A combustion gas leak through the right Solid Rocket Motor aft field joint initiated at or shortly after ignition eventually weakened and/or penetrated the External Tank initiating vehicle structural breakup and loss of the Space Shuttle *Challenger*."
+- The committee concluded that "A combustion gas leak through the right Solid Rocket Motor aft field joint initiated at or shortly after ignition eventually weakened and/or penetrated the External Tank initiating vehicle structural breakup and loss of the Space Shuttle *Challenger*."
 
-### Further, the committee concluded that "careful analysis of the flight history of the O-ring performance would have revealed the correlation of O-ring damage in low temperature".
+- Further, the committee concluded that "careful analysis of the flight history of the O-ring performance would have revealed the correlation of O-ring damage in low temperature".
 
 ---
 
