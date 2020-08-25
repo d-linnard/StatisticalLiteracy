@@ -70,7 +70,7 @@ ggplot(df[df$O.ring > 0,], aes(x=Temp, y=as.factor(O.ring))) +
 
 - **Lesson**: the absence of evidence $\neq$ evidence of absence.
 
-### In contrast, at least one participant, Roger Boisjoly, stated that "temperature was indeed a discriminator".
+- In contrast, at least one participant, Roger Boisjoly, stated that "temperature was indeed a discriminator".
 
 ---
 
@@ -212,10 +212,133 @@ $$ logit\left(\hat{\pi}\right)= 13.292 - 0.229\text{ temperature} + 0.010\text{ 
 1/exp(summary(model_binary)$coefficients)
 ```
 
-- For the binary logistic regression model with `Temperature` and `Pressure` included, we see that a unit decrease in temperature changes the odds of failure by 1.25 times.
+- For the binary logistic regression model with `temperature` and `pressure` included, we see that a unit decrease in temperature changes the odds of failure by 1.25 times.
+
+- **Lesson**: temperature matters!
+
+---
+
+### Does pressure actually matter?
+
+- To determine if both explanatory variables matter, we test $H_0: \beta = 0$ vs $H_A:\beta \neq 0$, for both `temperature` and `pressure`, for the binary model:
+
+```{r echo=F}
+Anova(model_binary, test='LR')
+```
+
+- **Lesson**: temperature matters!
+- Should we really remove `pressure` from the model? What are the advantages and disadvantages?
+
+---
+
+### Temperature matters but... how confident are we that cooler temperatures really increase the odds of O-ring failure?
+
+```{r echo=F, fig.cap="Figure 9. O-ring failure as a function of temperature"}  
+
+# Estimate binary logistic regression model
+model_binary2 <- glm(Failure ~ Temp,
+               family = binomial(link = logit),
+               data = df)
+# Create an array for temperature between 31 and 81 degrees
+t <- seq(31,81,1)
+alpha=0.05
+model_predict <- predict(object=model_binary2 , newdata=data.frame(Temp=t), type='link', se=T)
+CI_lower_linear <- model_predict$fit + qnorm(p=alpha/2)*model_predict$se.fit
+CI_lower_pi <- exp(CI_lower_linear)/(1+exp(CI_lower_linear))
+CI_higher_linear <- model_predict$fit + qnorm(p=1-alpha/2)*model_predict$se.fit
+CI_higher_pi <- exp(CI_higher_linear)/(1+exp(CI_higher_linear))
+
+##### pi with CI vs temp
+plot(df$Temp, df$Failure,
+     xlab= "Temperature (°F)",
+     ylab=expression(pi),
+     pch=20, cex=1.5,
+     xlim=c(31,81),
+     ylim=c(0,1))
+# Betas
+b0 <- model_binary2$coefficients[1]
+b1 <- model_binary2$coefficients[2]
+curve(expr = exp(b0+b1*x)/(1+exp(b0+b1*x)), add=T)
+lines(t, CI_lower_pi, lty = 'dashed')
+lines(t, CI_higher_pi, lty = 'dashed')
+```
+
+- Why is the confidence band wider at lower temperatures than at higher temperatures?
+
+---
+
+### How confident are we that O-rings would fail at a cold temperature, say 29°F, and a warm temperature, say 72°F? 
+
+```{r warning=FALSE, echo=F, results="hide"}  
 
 
+# Set a seed
+set.seed(1)
 
+# Use pi estimated from the model
+z = model_binary2$coefficients["(Intercept)"] + model_binary2$coefficients["Temp"] * df$Temp
+pi = exp(z)/(1+exp(z))
+
+# Save the pi array to the dataframe
+df$O.ring.pi <- pi
+
+# Dataframe to populate with results
+results <- data.frame(pred.31 = numeric(), pred.72 = numeric())
+
+for (s in 1:1000){
+  
+  I.sample <- sample(x = 1:nrow(df),
+                     size = 23,
+                     replace = T)
+  # Populate d with samples
+  d <- df[I.sample,]  
+  # Simulate outcomes using rbinom
+  O.ring2 <- rbinom(n=23, # sample size
+                size=6, # number of trials
+                prob=d$O.ring.pi) # probability
+  d <- data.frame(d, O.ring2)
+  # Estimate model with rbinom bootstrap outcomes
+  mod <- glm(Failure ~ Temp,
+               family = binomial(link = logit),
+               data = d)
+  # Estimate confidence interval for temp = 31
+  temp.31.data <- data.frame(Temp=29)
+  temp.31 <- predict(object = mod, newdata = temp.31.data,
+                      type = "response")
+  # Estimate confidence interval for temp = 72
+  temp.72.data <- data.frame(Temp=72)
+  temp.72 <- predict(object = mod, newdata = temp.72.data,
+                      type = "response")
+  results <- results %>% add_row(pred.31 = temp.31, pred.72 = temp.72)  
+}
+
+CI.31 <- quantile(results[,1], probs=c(0.05, 0.95))
+CI.72 <- quantile(results[,2], probs=c(0.05, 0.95))
+data.frame(temp=c(29,72), lower.CI=c(CI.31[1],CI.72[1]), upper.CI=c(CI.31[2],CI.72[2]))
+
+```
+
+```{r, fig.height=8, fig.width=8, echo=F, fig.cap="Figure 10. 90% confidence interval estimated with a parametric bootstrap approach"}
+
+
+# Plot histograms of confidence intervals
+par(mfrow=c(2,1),mar=c(5,4,4,2))
+# Histogram for temp = 31
+hist(results[,1],
+     breaks=50,
+     col="skyblue",
+     xlab=expression(pi),
+     xlim=c(0,1),
+     main=' ')
+mtext('(a) Probability of failure at 29 °F', side = 3, padj = -2.5)
+# Histogram for temp = 72
+hist(results[,2],
+     breaks=10,
+     col="orangered",
+     xlab=expression(pi),
+     xlim=c(0,1), main=' ')
+mtext('(b) Probability of failure at 72 °F', side = 3, padj = -2.5)
+```
 
 
 
