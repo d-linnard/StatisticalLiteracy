@@ -269,7 +269,7 @@ lines(t, CI_higher_pi, lty = 'dashed')
 
 ---
 
-### How confident are we that O-rings would fail at a cold temperature, say 36°F, and a warm temperature, say 72°F? 
+### How confident are we that O-rings would fail at a cold temperature, say 36°F, and a warm temperature, say 72°F?
 
 ```{r warning=FALSE, echo=F, results="hide"}  
 
