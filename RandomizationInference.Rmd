@@ -1,0 +1,340 @@
+---
+title: "Randomization inference"
+author: "David Linnard Wheeler"
+date: "6/14/2021"
+output: html_document
+---
+
+```{r echo=FALSE, results='hide',message=FALSE}
+knitr::opts_chunk$set(fig.width=5, fig.height=5) 
+```
+
+
+### Imagine that we want to determine if some groups are _different_ from each other.
+
+```{r echo=FALSE, results='hide',message=FALSE}
+# Invoke libraries
+library("data.table")
+library("ggplot2")
+library("tidyverse")
+library("dplyr")
+library("knitr")
+```
+
+Let's load some data to demonstrate:
+
+```{r echo=FALSE, results='hide'}
+d <- fread("/Users/davidwheeler/Desktop/DataScience/BERKELEY/W241/PS_2/w241-ps2-spring2020-section5/data/list_data_2019 (1).csv")
+# Rename variables
+setnames(d, "uniform_price_auction", "auction_type")
+```
+
+```{r}
+# The top of the data table/frame
+head(d)
+```
+<div style="margin-bottom:100px;">
+
+Next, let's formulate a clear question and testable hypothesis:
+
+**Question**: Is there a difference in bids between different auction types?
+
+**Sharp $H_0$**: $\tau_i = Y_i(0) - Y_i(1) = 0$ for each subject/unit.
+
+- Note that this is a **much** stronger assertion than the typical, difference in means, hypothesis we generally pose.  
+- Also, note that randomization inference is flexible- we can test many types of hypotheses.
+
+
+```{r echo=FALSE, results='hide'}
+
+str(d)
+# Coerce x to factor
+d$auction_type = factor(d$auction_type)
+# Sanity check
+str(d)
+```
+</div>
+
+
+<div style="margin-bottom:100px;">
+#### Before we do anything fancy let's just see if there is _a_ difference between the two treatments
+```{r}
+# Group mus and sigmas by auction type
+knitr::kable(d[ , .(mu_hat=mean(bid),
+      sigma_hat=sqrt(var(bid))),
+   by = auction_type ],
+   format = "html",
+   table.attr = "style='width:30%;'")
+```
+</div>
+<div style="margin-bottom:100px;">
+Numerically, the groups _appear_ different. Let's look closer:
+```{r fig1, fig.height = 3, fig.width = 5}
+d %>%
+ggplot(aes(x=auction_type, y=bid,
+           group=auction_type)) +
+geom_boxplot() +
+  geom_jitter(size=5, pch=20, alpha=1/2,
+              position=position_jitter(w=0.1, h=0.1))+
+  theme_bw(base_size = 15) +
+  labs(x="auction type", y="bid($)")
+```
+</div>
+<div style="margin-bottom:100px;">
+#### So, are they _really_ different
+```{r}
+# # 1st solution
+# ate <- d[ , mean(bid), keyby = .(auction_type)][ , diff(V1)]
+# ate
+# # 2nd solution
+# TCmeans <- d[ , .(mu = mean(bid)), keyby=.(auction_type)]
+# ate <- TCmeans[ , diff(mu)]
+# ate
+# 3rd solution
+ts <- mean(d$bid[d$auction_type == 1]) - mean(d$bid[d$auction_type == 0])
+ts
+```
+
+
+##### One way to test for a difference-in-means with a t-test:
+```{r}
+# t-test 1
+#d[ , t.test(bid ~ auction_type)]
+# t-test 2
+t <- t.test(bid ~ auction_type, data=d)
+
+# t-test statistic
+# t$statistic[[1]]
+
+# t-test statistic
+# t$conf.int[1:2]
+
+```
+
+This method is OK if you satisfy the requisite assumptions and sometimes even if you do not...
+
+But these assumptions can be restrictive.
+
+This is where randomization inference can come to the rescue.
+</div>
+<div style="margin-bottom:300px;">
+
+##### Another solution is to use randomization inference (RI).
+
+There are many ways to introduce RI. Most are intuitive.
+
+First, let's go back in time to just before treatment assignment. 
+
+- Note that there is >1 way to assign treatments to units/subjects.
+
+- More formally, since there are `r sum(d$auction_type==1)` units each in treatment and control and `r nrow(d)` total observations, there are $68\choose 34$ = $\frac{64!}{34!34!}$ = `r choose(68, 34)` possible treatment assignments!
+
+- That is a lot of ways to assign treatments to units. We just _used_ one way. 
+
+- RI takes advantage of these possible but unobserved counterfactual treatment assignments. It asks "how likely are we to observe the treatment effect we detected ($test\;statistic$ = `r ts`) in all of the experiments we could have conducted with different treatment assignments."
+
+</div>
+<div style="margin-bottom:300px;">
+
+- To answer this question, we need 3 things:
+
+  - a test statistic
+  - a null hypothesis
+  - a measure of extremeness
+
+
+- Let's go through each one in turn.
+
+</div>
+<div style="margin-bottom:300px;">
+
+- Test statistic
+  - This could be anything like, say a difference-in-means:
+
+```{r}
+# 1 solution
+ts <- mean(d$bid[d$auction_type == 1]) - mean(d$bid[d$auction_type == 0])
+# 2 Solution
+tslm <- lm(bid ~ auction_type, data=d)
+# all together now
+knitr::kable(data.table(method = c("ByHand","LinearModel"),
+           estimate = c(ts, tslm$coefficients[[2]])),
+   format = "html",
+   table.attr = "style='width:30%;'")
+```
+</div>
+<div style="margin-bottom:300px;">
+
+- Null distribution
+
+  - This is the _meat and potatoes_ of RI. 
+  - With other methods, like a t-test, we compute our test statistic,$t$, find it under the sampling distribution of the statistic (a $t$ distribution) and use the probability of observing our $t$ or one more extreme under the null as evidence against our $H_0$.
+  - With RI, we use a simpler approach. 
+    - First, we assume the sharp null ($\tau_i = Y_i(0) - Y_i(1) = 0$ for each subject/unit) is true. 
+    - If the sharp null is true than then treatment has no effect on each unit. Thus, we can shuffle (ahem, _permute_) the treatment vector, calculate our test statistic after each permutation, and repeat _many_ times. This procedure yields the sampling distribution of our test-statistic. This DIY null distribution describes all of the possible test-statistics that could have arisen with _our_ data.
+    - Next we just find our original test-statistic (the one we calculated before the permutations, here its `r ts`).
+    
+</div>
+<div style="margin-bottom:300px;">
+
+- This is how this works:
+```{r}
+ 
+# example 1
+# Null distribution
+null_dist1 <- NA 
+# For each randomization, r, from 1 to 10000
+for(r in 1:100000) { 
+  # populate this empty vector, ri_distribution, with ates after each shuffle
+  null_dist1[r] <- d[ , .(group_mean = mean(bid)), 
+    keyby = .(sample(auction_type))][ , diff(group_mean)]
+}
+```
+
+```{r}
+
+# example 2
+# Randomization inference
+# Vector  of NAs to replace with estimates under randomization
+null_dist2 <- rep(NA, 10000)
+
+# For each test statistic, ATE, from 1 to 10,000
+for(a in 1:10000) {
+  # Assign to treatment, a random vector of 0s and 1s.
+  # Let the number of 0s and 1s be equal to the number of winners (1) and non-winners (0)
+  treatment <- sample(c(rep(0, sum(d$auction_type == 0)),
+                        rep(1, sum(d$auction_type == 1))),
+                  replace = TRUE)
+  # Assign ate to the difference in mean views for winners and non-winners
+  null_dist2[a] <- d[treatment==1, .(mean(bid))] - d[treatment==0, .(mean(bid))]
+}
+```
+
+```{r}
+
+# Example 3
+# Build vector of randomized treatment assignments
+sim.study <- function() {
+  # data table with two columns
+                      # vector of RANDOMIZED treatment assignments
+  d.sim <- data.table(auction_type = sample(c(rep(0,length(d$auction_type)/2),
+                                          rep(1,length(d$auction_type)/2))),
+                      # vector of ORIGINAL response/label/dependent variable
+                      bid = d$bid)
+  # Group means
+  group_means <- d.sim[ , .(mean_bids = mean(bid)),
+                keyby = auction_type]# [, diff(group_mean)]
+  # test statistics
+  tss <- group_means[auction_type == 1]$mean_bids - group_means[auction_type == 0]$mean_bids
+  # Vector of ATEs
+  return(tss)
+  
+}
+
+# Run simulations
+null_dist3 <- t(replicate(10000, sim.study()))
+```
+
+
+
+
+Let's visualize our DIY null distribution:
+```{r fig2, fig.height = 3, fig.width = 5}
+
+#par(mfrow=c(3,1))
+# All ATEs
+hist(null_dist1,
+     xlim=c(-15,15), main=" ")
+# Our original ATE
+abline(v=ts, col="red")
+
+# # All ATEs
+# hist(as.numeric(null_dist2), 
+#      xlim=c(-15,15), main=" ")
+# # Our original ATE
+# abline(v=ts, col="red")
+# 
+# # All ATEs
+# hist(as.numeric(null_dist3[1,]), 
+#      xlim=c(-15,15), main=" ")
+# # Our original ATE
+# abline(v=ts, col="red")
+```
+
+<div style="margin-bottom:300px;">
+
+#### How do we interpret this?
+
+- This is where the measure of extremeness comes in to play.
+  - In general we have two choices:
+    1. Interpret large OR small simulated test statistics as _directional_ evidence against the null
+    2. Interpret large AND small simulated test statistics as _categorical_ evidence against the null
+  
+
+To do this, we can just count the number of simulated test statistics that are larger in absolute value than our actual test statistic.
+```{r}
+# number of larger ates
+larger_ts1 <- sum(null_dist1 > abs(ts))
+larger_ts1
+
+# number of larger ates
+larger_ts2 <- sum(abs(null_dist1) > abs(ts))
+larger_ts2
+```
+
+</div>
+<div style="margin-bottom:300px;">
+
+Further we can calculate confidence intervals
+```{r}
+
+# CI
+ri.CI <- quantile(null_dist1,
+                  probs = c(0.025, 0.975))
+# Centered about the ate
+ri.CI <- ri.CI + ts
+
+ri.CI[[1]]; ri.CI[[2]]
+```
+
+</div>
+<div style="margin-bottom:300px;">
+
+And p-values
+```{r}
+# 1-tailed P-value
+p_value_1tail <-  sum(null_dist1 >= abs(ts))/10000 # mean(ri_distribution >= abs(ate))
+
+# 2-tailed P-value
+p_value_2tailed <- sum(abs(null_dist1) >= abs(ts))/10000 # mean(abs(ri_distribution) >= abs(ate))
+
+# Compare
+knitr::kable(data.table("Test" = c("T.test","RI.1tail", "RI.2tailed"),
+            "statistic" = c(t$statistic[[1]], ts, ts),
+           "confidence_interval_UB" = c(t$conf.int[1], ri.CI[[2]], ri.CI[[2]]),
+            "confidence_interval_UB" = c(t$conf.int[2], ri.CI[[1]], ri.CI[[1]]),
+            "p-values" = c(p_value_1tail, p_value_2tailed, t$p.value)),
+   format = "html",
+   table.attr = "style='width:70%;'")
+
+```
+
+</div>
+<div style="margin-bottom:300px;">
+
+Does this make sense? 
+
+What did we learn?
+
+Three benefits of RI:
+- Its flexible.
+- Its agnostic to many assumptions.
+- It is exact because the set of all possible random assignments fully describe the sampling distribution under the null hypothesis. Many other methods derive the shape of sampling distributions by approximation.
+
+</div>
+<div style="margin-bottom:300px;">
+
+#### Resources:
+- [Fisher’s Randomization Inference](https://www.mattblackwell.org/files/teaching/s05-fisher.pdf)
+- [R package](http://alexandercoppock.com/ri2/articles/ri2_vignette.html)
+- [Field experiments: design, analysis, and interpretation](https://www.amazon.com/Field-Experiments-Design-Analysis-Interpretation/dp/0393979954)
